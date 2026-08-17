@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FinanControl - Herramienta para registrar y consultar movimientos financieros personales de forma sencilla.">
+  <title>FinanControl - Control Financiero Personal</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Header de la Aplicación -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <a href="javascript:void(0)" class="brand" id="brand-link">
+        <div class="brand-icon">F</div>
+        <div class="brand-name">Finan<span>Control</span></div>
+      </a>
+      <div class="nav-status">
+        <span class="status-dot"></span>
+        <span>Sistema listo</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="app-container">
+    
+    <!-- Banner informativo de la etapa actual -->
+    <section class="welcome-banner">
+      <h1>Bienvenido a FinanControl</h1>
+      <p>
+        Estructura base del proyecto configurada correctamente. El sistema está preparado para comenzar con el desarrollo por etapas de los componentes y el Dashboard.
+      </p>
+    </section>
+
+    <!-- Contenedor del Módulo de Registro de Ingresos -->
+    <section class="income-module" id="main-content">
+      <div class="card form-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-title-icon">💵</span> Registrar Nuevo Ingreso
+          </h2>
+          <p class="card-subtitle">Ingresa los detalles del ingreso para registrarlo en el sistema.</p>
+        </div>
+
+        <!-- Mensajes de Alerta/Confirmación -->
+        <div id="form-alert" class="alert hidden" role="alert" aria-live="polite"></div>
+
+        <!-- Formulario de Registro -->
+        <form id="income-form" novalidate>
+          <div class="form-grid">
+            
+            <!-- Campo: Descripción -->
+            <div class="form-group full-width">
+              <label for="income-description" class="form-label">
+                Descripción <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="income-description" 
+                name="description" 
+                class="form-control"
+                placeholder="Ej. Pago de salario quincenal, diseño web freelancing..."
+                required
+                autocomplete="off"
+              >
+              <span class="error-text hidden" id="error-description">La descripción no puede estar vacía.</span>
+            </div>
+
+            <!-- Campo: Valor -->
+            <div class="form-group">
+              <label for="income-amount" class="form-label">
+                Valor ($) <span class="required">*</span>
+              </label>
+              <div class="input-prefix-wrapper">
+                <span class="input-prefix">$</span>
+                <input 
+                  type="number" 
+                  id="income-amount" 
+                  name="amount" 
+                  class="form-control with-prefix"
+                  placeholder="0.00" 
+                  min="0.01" 
+                  step="0.01" 
+                  required
+                >
+              </div>
+              <span class="error-text hidden" id="error-amount">El valor debe ser un número mayor a 0.</span>
+            </div>
+
+            <!-- Campo: Fecha -->
+            <div class="form-group">
+              <label for="income-date" class="form-label">
+                Fecha <span class="required">*</span>
+              </label>
+              <input 
+                type="date" 
+                id="income-date" 
+                name="date" 
+                class="form-control"
+                required
+              >
+              <span class="error-text hidden" id="error-date">Selecciona una fecha válida.</span>
+            </div>
+
+            <!-- Campo: Categoría -->
+            <div class="form-group full-width">
+              <label for="income-category" class="form-label">
+                Categoría <span class="required">*</span>
+              </label>
+              <select id="income-category" name="category" class="form-control" required>
+                <option value="" disabled selected>-- Selecciona una categoría --</option>
+                <option value="Salario">💼 Salario</option>
+                <option value="Freelance">💻 Freelance</option>
+                <option value="Ventas">🛒 Ventas</option>
+                <option value="Negocio">🏢 Negocio</option>
+                <option value="Otros">📦 Otros</option>
+              </select>
+              <span class="error-text hidden" id="error-category">Debes seleccionar una categoría.</span>
+            </div>
+
+          </div>
+
+          <!-- Botón de Envío -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btn-submit">
+              <span>Guardar Ingreso</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Contenedor del Módulo: Mis Movimientos -->
+    <section class="movements-module">
+      <div class="card">
+        <div class="movements-header">
+          <div>
+            <h2 class="card-title">
+              <span class="card-title-icon">📋</span> Mis Movimientos
+            </h2>
+            <p class="card-subtitle">Consulta la lista completa de ingresos que has registrado.</p>
+          </div>
+
+          <!-- Tarjeta de Resumen del Total -->
+          <div class="summary-card">
+            <div class="summary-info">
+              <span class="summary-label">Total Ingresos</span>
+              <span class="summary-amount" id="total-income-amount">$0.00</span>
+            </div>
+            <div class="summary-count" id="movements-count-badge">0 registros</div>
+          </div>
+        </div>
+
+        <!-- Estado Vacío (Sin Registros) -->
+        <div id="empty-movements" class="empty-state">
+          <div class="empty-icon">📂</div>
+          <h3 class="empty-title">No hay ingresos registrados aún</h3>
+          <p class="empty-desc">Utiliza el formulario superior para registrar tu primer ingreso en FinanControl.</p>
+        </div>
+
+        <!-- Tabla de Movimientos -->
+        <div id="movements-table-wrapper" class="table-container hidden">
+          <table class="table" id="movements-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th class="text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody id="movements-list-body">
+              <!-- Filas dinámicas generadas mediante JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2026 FinanControl - Herramienta de Aprendizaje de Desarrollo Web</p>
+  </footer>
+
+  <!-- Script Principal de la Aplicación (JavaScript ES6 Modules) -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
