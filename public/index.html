@@ -26,12 +26,166 @@
   <!-- Contenido Principal -->
   <main class="app-container">
     
-    <!-- Banner informativo de la etapa actual -->
-    <section class="welcome-banner">
-      <h1>Bienvenido a FinanControl</h1>
-      <p>
-        Estructura base del proyecto configurada correctamente. El sistema está preparado para comenzar con el desarrollo por etapas de los componentes y el Dashboard.
-      </p>
+    <!-- Sección Principal: Resumen Financiero (Dashboard) -->
+    <section class="dashboard-module" id="dashboard-section">
+      <div class="section-header">
+        <h1 class="section-title">
+          <span class="section-title-icon">📊</span> Balance Financiero y Resumen
+        </h1>
+        <p class="section-subtitle">Visualización en tiempo real de tu saldo neto disponible, ingresos, gastos y margen económico.</p>
+      </div>
+
+      <!-- Tarjetas de Indicadores Principales (3 métricas globales) -->
+      <div class="dashboard-grid main-metrics-grid">
+        <!-- Tarjeta 1: Ingresos Totales -->
+        <div class="stat-card stat-total">
+          <div class="stat-icon-wrapper">💰</div>
+          <div class="stat-content">
+            <span class="stat-label">Ingresos totales</span>
+            <span class="stat-value" id="dashboard-total-income">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2: Gastos Totales -->
+        <div class="stat-card stat-expenses">
+          <div class="stat-icon-wrapper">💸</div>
+          <div class="stat-content">
+            <span class="stat-label">Gastos totales</span>
+            <span class="stat-value amount-negative" id="dashboard-total-expenses">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 3: Saldo Disponible (Ingresos - Gastos) -->
+        <div class="stat-card stat-balance">
+          <div class="stat-icon-wrapper">💳</div>
+          <div class="stat-content">
+            <span class="stat-label">Saldo disponible</span>
+            <span class="stat-value" id="dashboard-available-balance">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seccion: Resumen del Mes Actual -->
+      <div class="month-summary-section">
+        <h3 class="subsection-title">📅 Resumen del Mes Actual</h3>
+        <div class="dashboard-grid month-metrics-grid">
+          <!-- Ingresos del Mes -->
+          <div class="stat-card stat-sub-card stat-month">
+            <div class="stat-content">
+              <span class="stat-label">Ingresos del mes</span>
+              <span class="stat-value" id="dashboard-month-income">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Gastos del Mes -->
+          <div class="stat-card stat-sub-card stat-month-expenses">
+            <div class="stat-content">
+              <span class="stat-label">Gastos del mes</span>
+              <span class="stat-value amount-negative" id="dashboard-month-expenses">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Saldo del Mes -->
+          <div class="stat-card stat-sub-card stat-month-balance">
+            <div class="stat-content">
+              <span class="stat-label">Saldo del mes</span>
+              <span class="stat-value" id="dashboard-month-balance">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de Comparativa e Ingresos/Gastos por Categoría -->
+      <div class="dashboard-analytics-grid">
+        
+        <!-- Tarjeta: Visualización Comparativa Ingresos vs Gastos -->
+        <div class="card chart-card" id="income-vs-expenses-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-title-icon">⚖️</span> Comparativa Ingresos vs Gastos
+            </h2>
+            <p class="card-subtitle">Relación entre tus ingresos acumulados y el total de tus gastos.</p>
+          </div>
+          <div class="comparison-content-wrapper" id="comparison-chart-container">
+            <!-- Renderizado dinámico desde app.js -->
+          </div>
+        </div>
+
+        <!-- Tarjeta: Visualización Gráfica de Ingresos por Categorías -->
+        <div class="card chart-card" id="income-chart-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-title-icon">📈</span> Ingresos por Categoría
+            </h2>
+            <p class="card-subtitle">Desglose de ingresos por origen.</p>
+          </div>
+          <div class="chart-content-wrapper" id="income-chart-container">
+            <!-- Gráfico Donut SVG generado dinámicamente desde app.js -->
+          </div>
+        </div>
+
+        <!-- Tarjeta: Visualización Gráfica de Gastos por Categorías -->
+        <div class="card chart-card" id="expense-chart-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-title-icon">📉</span> Gastos por Categoría
+            </h2>
+            <p class="card-subtitle">Desglose de gastos por destino.</p>
+          </div>
+          <div class="chart-content-wrapper" id="expense-chart-container">
+            <!-- Gráfico Donut SVG generado dinámicamente desde app.js -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tarjeta: Resumen de Categorías de Ingreso -->
+      <div class="card category-summary-card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-title-icon">🏷️</span> Ingresos por categoría
+          </h2>
+          <p class="card-subtitle">Desglose acumulado y proporción por categoría.</p>
+        </div>
+
+        <!-- Tarjetas / Barras visuales de categorías -->
+        <div class="category-grid" id="category-summary-list">
+          <!-- Generado dinámicamente desde app.js -->
+        </div>
+      </div>
+
+      <!-- Tarjeta: Resumen de Categorías de Gasto -->
+      <div class="card category-summary-card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-title-icon">🛒</span> Gastos por categoría
+          </h2>
+          <p class="card-subtitle">Desglose acumulado y proporción por categoría de gasto.</p>
+        </div>
+
+        <!-- Tarjetas / Barras visuales de categorías de gasto -->
+        <div class="category-grid" id="expense-category-summary-list">
+          <!-- Generado dinámicamente desde app.js -->
+        </div>
+      </div>
+
+      <!-- Tarjeta: Movimientos Recientes del Dashboard -->
+      <div class="card recent-movements-card" id="recent-movements-card">
+        <div class="card-header flex-between">
+          <div>
+            <h2 class="card-title">
+              <span class="card-title-icon">⏱️</span> Movimientos recientes
+            </h2>
+            <p class="card-subtitle">Últimas transacciones (ingresos y gastos) registradas en el sistema.</p>
+          </div>
+          <a href="#movements-table-wrapper" class="view-all-link" id="scroll-to-movements">Ver todos →</a>
+        </div>
+        
+        <div id="recent-movements-container">
+          <!-- Renderizado dinámico desde app.js -->
+        </div>
+      </div>
+
     </section>
 
     <!-- Contenedor del Módulo de Registro de Ingresos -->
@@ -51,27 +205,27 @@
         <form id="income-form" novalidate>
           <div class="form-grid">
             
-            <!-- Campo: Descripción -->
+            <!-- Campo 1: Concepto del ingreso (Obligatorio) -->
             <div class="form-group full-width">
-              <label for="income-description" class="form-label">
-                Descripción <span class="required">*</span>
+              <label for="income-concept" class="form-label">
+                Concepto del ingreso <span class="required">*</span>
               </label>
               <input 
                 type="text" 
-                id="income-description" 
-                name="description" 
+                id="income-concept" 
+                name="concept" 
                 class="form-control"
-                placeholder="Ej. Pago de salario quincenal, diseño web freelancing..."
+                placeholder="Ej. Pago de quincena, Venta de equipo, Proyecto web freelance..."
                 required
                 autocomplete="off"
               >
-              <span class="error-text hidden" id="error-description">La descripción no puede estar vacía.</span>
+              <span class="error-text hidden" id="error-concept">El concepto del ingreso no puede estar vacío.</span>
             </div>
 
-            <!-- Campo: Valor -->
+            <!-- Campo 2: Valor del ingreso (Obligatorio, > 0) -->
             <div class="form-group">
               <label for="income-amount" class="form-label">
-                Valor ($) <span class="required">*</span>
+                Valor del ingreso ($) <span class="required">*</span>
               </label>
               <div class="input-prefix-wrapper">
                 <span class="input-prefix">$</span>
@@ -89,23 +243,8 @@
               <span class="error-text hidden" id="error-amount">El valor debe ser un número mayor a 0.</span>
             </div>
 
-            <!-- Campo: Fecha -->
+            <!-- Campo 3: Categoría (Obligatoria) -->
             <div class="form-group">
-              <label for="income-date" class="form-label">
-                Fecha <span class="required">*</span>
-              </label>
-              <input 
-                type="date" 
-                id="income-date" 
-                name="date" 
-                class="form-control"
-                required
-              >
-              <span class="error-text hidden" id="error-date">Selecciona una fecha válida.</span>
-            </div>
-
-            <!-- Campo: Categoría -->
-            <div class="form-group full-width">
               <label for="income-category" class="form-label">
                 Categoría <span class="required">*</span>
               </label>
@@ -120,19 +259,109 @@
               <span class="error-text hidden" id="error-category">Debes seleccionar una categoría.</span>
             </div>
 
+            <!-- Campo 4: Fecha (Obligatoria) -->
+            <div class="form-group">
+              <label for="income-date" class="form-label">
+                Fecha <span class="required">*</span>
+              </label>
+              <input 
+                type="date" 
+                id="income-date" 
+                name="date" 
+                class="form-control"
+                required
+              >
+              <span class="error-text hidden" id="error-date">Selecciona una fecha válida.</span>
+            </div>
+
+            <!-- Campo 5: Descripción (Opcional) -->
+            <div class="form-group full-width">
+              <label for="income-description" class="form-label">
+                Descripción <span class="optional-label">(opcional)</span>
+              </label>
+              <textarea 
+                id="income-description" 
+                name="description" 
+                class="form-control textarea-control"
+                rows="2"
+                placeholder="Detalles adicionales sobre este ingreso (opcional)..."
+              ></textarea>
+            </div>
+
           </div>
 
-          <!-- Botón de Envío -->
+          <!-- Botón de Envío: Guardar ingreso -->
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" id="btn-submit">
-              <span>Guardar Ingreso</span>
+              <span>Guardar ingreso</span>
             </button>
           </div>
         </form>
+    <!-- Contenedor del Módulo: Filtros y Búsqueda de Movimientos -->
+    <section class="filters-module" id="filters-section">
+      <div class="card filter-card">
+        <div class="card-header flex-between">
+          <div>
+            <h2 class="card-title">
+              <span class="card-title-icon">🔍</span> Buscar y Filtrar Movimientos
+            </h2>
+            <p class="card-subtitle">Filtra tus movimientos por concepto, tipo, categoría o fecha.</p>
+          </div>
+          <button type="button" class="btn-secondary-outline" id="btn-reset-filters">
+            <span>🔄 Limpiar filtros</span>
+          </button>
+        </div>
+
+        <div class="filter-controls-grid">
+          <!-- Campo 1: Búsqueda por texto -->
+          <div class="form-group search-group">
+            <label for="filter-search" class="form-label">Buscar por concepto/descripción</label>
+            <div class="input-prefix-wrapper">
+              <span class="input-prefix">🔎</span>
+              <input 
+                type="text" 
+                id="filter-search" 
+                class="form-control with-prefix" 
+                placeholder="Ej. Proyecto, Mercado, Arriendo..."
+                autocomplete="off"
+              >
+            </div>
+          </div>
+
+          <!-- Campo 2: Filtro por Tipo -->
+          <div class="form-group">
+            <label for="filter-type" class="form-label">Tipo de movimiento</label>
+            <select id="filter-type" class="form-control">
+              <option value="all">Todos (Ingresos y Gastos)</option>
+              <option value="income">💵 Solo Ingresos</option>
+              <option value="expense">💸 Solo Gastos</option>
+            </select>
+          </div>
+
+          <!-- Campo 3: Filtro por Categoría -->
+          <div class="form-group">
+            <label for="filter-category" class="form-label">Categoría</label>
+            <select id="filter-category" class="form-control">
+              <option value="all">Todas las categorías</option>
+            </select>
+          </div>
+
+          <!-- Campo 4: Fecha Desde -->
+          <div class="form-group">
+            <label for="filter-date-from" class="form-label">Fecha desde</label>
+            <input type="date" id="filter-date-from" class="form-control">
+          </div>
+
+          <!-- Campo 5: Fecha Hasta -->
+          <div class="form-group">
+            <label for="filter-date-to" class="form-label">Fecha hasta</label>
+            <input type="date" id="filter-date-to" class="form-control">
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Contenedor del Módulo: Mis Movimientos -->
+    <!-- Contenedor del Módulo: Mis Movimientos (Ingresos) -->
     <section class="movements-module">
       <div class="card">
         <div class="movements-header">
@@ -166,12 +395,177 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Descripción</th>
+                <th>Concepto</th>
                 <th>Categoría</th>
                 <th class="text-right">Valor</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody id="movements-list-body">
+              <!-- Filas dinámicas generadas mediante JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Contenedor del Módulo de Registro de Gastos -->
+    <section class="expense-module" id="expense-content">
+      <div class="card form-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-title-icon">💸</span> Registrar Nuevo Gasto
+          </h2>
+          <p class="card-subtitle">Ingresa los detalles del gasto para registrarlo en el sistema.</p>
+        </div>
+
+        <!-- Mensajes de Alerta/Confirmación de Gastos -->
+        <div id="expense-form-alert" class="alert hidden" role="alert" aria-live="polite"></div>
+
+        <!-- Formulario de Registro de Gastos -->
+        <form id="expense-form" novalidate>
+          <div class="form-grid">
+            
+            <!-- Campo 1: Concepto del gasto (Obligatorio) -->
+            <div class="form-group full-width">
+              <label for="expense-concept" class="form-label">
+                Concepto del gasto <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="expense-concept" 
+                name="concept" 
+                class="form-control"
+                placeholder="Ej. Mercado mensual, Pago de arriendo, Servicio de energía..."
+                required
+                autocomplete="off"
+              >
+              <span class="error-text hidden" id="error-expense-concept">El concepto del gasto no puede estar vacío.</span>
+            </div>
+
+            <!-- Campo 2: Valor del gasto (Obligatorio, > 0) -->
+            <div class="form-group">
+              <label for="expense-amount" class="form-label">
+                Valor del gasto ($) <span class="required">*</span>
+              </label>
+              <div class="input-prefix-wrapper">
+                <span class="input-prefix">$</span>
+                <input 
+                  type="number" 
+                  id="expense-amount" 
+                  name="amount" 
+                  class="form-control with-prefix"
+                  placeholder="0.00" 
+                  min="0.01" 
+                  step="0.01" 
+                  required
+                >
+              </div>
+              <span class="error-text hidden" id="error-expense-amount">El valor debe ser un número mayor a 0.</span>
+            </div>
+
+            <!-- Campo 3: Categoría de Gasto (Obligatoria) -->
+            <div class="form-group">
+              <label for="expense-category" class="form-label">
+                Categoría <span class="required">*</span>
+              </label>
+              <select id="expense-category" name="category" class="form-control" required>
+                <option value="" disabled selected>-- Selecciona una categoría --</option>
+                <option value="Alimentación">🍕 Alimentación</option>
+                <option value="Vivienda">🏠 Vivienda</option>
+                <option value="Transporte">🚌 Transporte</option>
+                <option value="Servicios">💡 Servicios</option>
+                <option value="Entretenimiento">🎬 Entretenimiento</option>
+                <option value="Educación">📚 Educación</option>
+                <option value="Salud">🏥 Salud</option>
+                <option value="Otros">📦 Otros</option>
+              </select>
+              <span class="error-text hidden" id="error-expense-category">Debes seleccionar una categoría.</span>
+            </div>
+
+            <!-- Campo 4: Fecha (Obligatoria) -->
+            <div class="form-group">
+              <label for="expense-date" class="form-label">
+                Fecha <span class="required">*</span>
+              </label>
+              <input 
+                type="date" 
+                id="expense-date" 
+                name="date" 
+                class="form-control"
+                required
+              >
+              <span class="error-text hidden" id="error-expense-date">Selecciona una fecha válida.</span>
+            </div>
+
+            <!-- Campo 5: Descripción (Opcional) -->
+            <div class="form-group full-width">
+              <label for="expense-description" class="form-label">
+                Descripción <span class="optional-label">(opcional)</span>
+              </label>
+              <textarea 
+                id="expense-description" 
+                name="description" 
+                class="form-control textarea-control"
+                rows="2"
+                placeholder="Detalles adicionales sobre este gasto (opcional)..."
+              ></textarea>
+            </div>
+
+          </div>
+
+          <!-- Botón de Envío: Guardar gasto -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-danger-gradient" id="btn-submit-expense">
+              <span>Guardar gasto</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Contenedor del Módulo: Mis Gastos -->
+    <section class="expenses-module">
+      <div class="card">
+        <div class="movements-header">
+          <div>
+            <h2 class="card-title">
+              <span class="card-title-icon">🛒</span> Mis Gastos
+            </h2>
+            <p class="card-subtitle">Consulta la lista completa de gastos que has registrado.</p>
+          </div>
+
+          <!-- Tarjeta de Resumen del Total de Gastos -->
+          <div class="summary-card summary-card-expenses">
+            <div class="summary-info">
+              <span class="summary-label">Total Gastos</span>
+              <span class="summary-amount amount-negative" id="total-expense-amount">$0.00</span>
+            </div>
+            <div class="summary-count" id="expenses-count-badge">0 registros</div>
+          </div>
+        </div>
+
+        <!-- Estado Vacío (Sin Gastos) -->
+        <div id="empty-expenses" class="empty-state">
+          <div class="empty-icon">💸</div>
+          <h3 class="empty-title">No hay gastos registrados aún</h3>
+          <p class="empty-desc">Utiliza el formulario superior para registrar tu primer gasto en FinanControl.</p>
+        </div>
+
+        <!-- Tabla de Gastos -->
+        <div id="expenses-table-wrapper" class="table-container hidden">
+          <table class="table" id="expenses-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Categoría</th>
+                <th class="text-right">Valor</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-list-body">
               <!-- Filas dinámicas generadas mediante JavaScript -->
             </tbody>
           </table>
