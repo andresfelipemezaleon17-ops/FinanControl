@@ -406,11 +406,9 @@ async function startServer() {
     console.log('✅ MongoDB Atlas conectado correctamente');
     console.log('📊 Base de datos: financontrol');
 
-    app.listen(PORT, () => {
-      console.log(
-        `🚀 Servidor ejecutándose en http://localhost:${PORT}`
-      );
-    });
+    app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor ejecutándose en http://0.0.0.0:${PORT}`);
+});
 
   } catch (error) {
     console.error('❌ Error conectando a MongoDB Atlas:');
