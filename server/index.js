@@ -1,310 +1,423 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
 
-// Obtener la ruta del directorio actual usando ES Modules
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración de rutas para la persistencia de datos (data/db.json)
-const DATA_DIR = path.join(__dirname, '../data');
-const DB_PATH = path.join(DATA_DIR, 'db.json');
+const MONGODB_URI = process.env.MONGODB_URI;
 
-/**
- * Garantiza la existencia del directorio data y el archivo db.json
- */
-const ensureDbFileExists = () => {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DB_PATH)) {
-      const initialData = { ingresos: [], gastos: [] };
-      fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2), 'utf-8');
-    }
-  } catch (error) {
-    console.error('❌ Error al crear/verificar el archivo db.json:', error);
-  }
-};
+if (!MONGODB_URI) {
+  console.error('❌ No se encontró MONGODB_URI en el archivo .env');
+  process.exit(1);
+}
 
-/**
- * Lee los datos almacenados en db.json
- * @returns {{ ingresos: Array, gastos: Array }}
- */
-const readDb = () => {
-  ensureDbFileExists();
-  try {
-    const fileContent = fs.readFileSync(DB_PATH, 'utf-8');
-    const parsed = JSON.parse(fileContent);
-    return {
-      ingresos: Array.isArray(parsed.ingresos) ? parsed.ingresos : [],
-      gastos: Array.isArray(parsed.gastos) ? parsed.gastos : []
-    };
-  } catch (error) {
-    console.error('❌ Error al leer db.json:', error);
-    return { ingresos: [], gastos: [] };
-  }
-};
+// Conexión a MongoDB
+const client = new MongoClient(MONGODB_URI, {
+  tls: true,
+  tlsAllowInvalidCertificates: false
+});
 
-/**
- * Guarda el estado actual de ingresos y gastos en db.json
- * @param {{ ingresos: Array, gastos: Array }} data
- * @returns {boolean}
- */
-const saveDb = (data) => {
-  ensureDbFileExists();
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('❌ Error al escribir en db.json:', error);
-    return false;
-  }
-};
+let db;
+let ingresosCollection;
+let gastosCollection;
+
+// Categorías válidas
+const CATEGORIAS_VALIDAS = [
+  'Salario',
+  'Freelance',
+  'Ventas',
+  'Negocio',
+  'Otros'
+];
+
+const CATEGORIAS_GASTOS_VALIDAS = [
+  'Alimentación',
+  'Vivienda',
+  'Transporte',
+  'Servicios',
+  'Entretenimiento',
+  'Educación',
+  'Salud',
+  'Otros'
+];
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Servir archivos estáticos del frontend (carpeta public)
+// Servir frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Categorías válidas permitidas
-const CATEGORIAS_VALIDAS = ['Salario', 'Freelance', 'Ventas', 'Negocio', 'Otros'];
-const CATEGORIAS_GASTOS_VALIDAS = ['Alimentación', 'Vivienda', 'Transporte', 'Servicios', 'Entretenimiento', 'Educación', 'Salud', 'Otros'];
+// ================================
+// SALUD DEL SERVIDOR
+// ================================
 
-// Ruta básica de salud / API preliminar
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'Servidor de FinanControl funcionando correctamente'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    await db.command({ ping: 1 });
+
+    res.json({
+      status: 'ok',
+      message: 'Servidor de FinanControl funcionando correctamente',
+      database: 'MongoDB conectado'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'MongoDB no está conectado'
+    });
+  }
 });
 
-/**
- * REST API: Obtener todos los ingresos registrados
- * GET /api/ingresos
- */
-app.get('/api/ingresos', (req, res) => {
-  const dbData = readDb();
-  res.json({
-    success: true,
-    data: dbData.ingresos
-  });
+// ================================
+// INGRESOS
+// ================================
+
+// Obtener ingresos
+app.get('/api/ingresos', async (req, res) => {
+  try {
+    const ingresos = await ingresosCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({
+      success: true,
+      data: ingresos
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo ingresos:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener los ingresos'
+    });
+  }
 });
 
-/**
- * REST API: Registrar un nuevo ingreso
- * POST /api/ingresos
- */
-app.post('/api/ingresos', (req, res) => {
-  const { concept, description, amount, date, category } = req.body;
+// Registrar ingreso
+app.post('/api/ingresos', async (req, res) => {
+  try {
+    const {
+      concept,
+      description,
+      amount,
+      date,
+      category
+    } = req.body;
 
-  // 1. Validar que el concepto del ingreso no esté vacío (o description si viene en formato antiguo)
-  const finalConcept = (concept || description || '').toString().trim();
-  if (!finalConcept) {
-    return res.status(400).json({
+    const finalConcept = (concept || description || '')
+      .toString()
+      .trim();
+
+    // Validar concepto
+    if (!finalConcept) {
+      return res.status(400).json({
+        success: false,
+        message: 'El concepto del ingreso es obligatorio.'
+      });
+    }
+
+    // Validar monto
+    const numericAmount = Number(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El valor del ingreso debe ser mayor que 0.'
+      });
+    }
+
+    // Validar fecha
+    if (!date || isNaN(Date.parse(date))) {
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha proporcionada no es válida.'
+      });
+    }
+
+    // Validar categoría
+    if (!category || !CATEGORIAS_VALIDAS.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: 'La categoría del ingreso no es válida.'
+      });
+    }
+
+    const nuevoIngreso = {
+      id: Date.now().toString(),
+      concept: finalConcept,
+      description:
+        typeof description === 'string'
+          ? description.trim()
+          : '',
+      amount: numericAmount,
+      date,
+      category,
+      createdAt: new Date()
+    };
+
+    await ingresosCollection.insertOne(nuevoIngreso);
+
+    console.log(
+      '✅ Nuevo ingreso guardado en MongoDB:',
+      nuevoIngreso
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Ingreso registrado correctamente.',
+      data: nuevoIngreso
+    });
+
+  } catch (error) {
+    console.error('❌ Error guardando ingreso:', error);
+
+    res.status(500).json({
       success: false,
-      message: 'El concepto del ingreso es obligatorio y no debe estar vacío.'
+      message: 'Error al guardar el ingreso en MongoDB.'
     });
   }
-
-  // 2. Validar que el valor sea un número mayor que 0
-  const numericAmount = Number(amount);
-  if (isNaN(numericAmount) || numericAmount <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'El valor del ingreso debe ser un número mayor que 0.'
-    });
-  }
-
-  // 3. Validar que la fecha sea válida
-  if (!date || isNaN(Date.parse(date))) {
-    return res.status(400).json({
-      success: false,
-      message: 'La fecha proporcionada no es válida.'
-    });
-  }
-
-  // 4. Validar que la categoría sea válida
-  if (!category || !CATEGORIAS_VALIDAS.includes(category)) {
-    return res.status(400).json({
-      success: false,
-      message: `La categoría seleccionada no es válida. Las opciones son: ${CATEGORIAS_VALIDAS.join(', ')}.`
-    });
-  }
-
-  // Descripción opcional
-  const optionalDescription = description && typeof description === 'string' ? description.trim() : '';
-
-  // Crear nuevo registro de ingreso
-  const nuevoIngreso = {
-    id: Date.now().toString(),
-    concept: finalConcept,
-    description: optionalDescription,
-    amount: numericAmount,
-    date,
-    category,
-    createdAt: new Date().toISOString()
-  };
-
-  // Leer estado actual de db.json, agregar nuevo ingreso y guardar
-  const dbData = readDb();
-  dbData.ingresos.push(nuevoIngreso);
-  saveDb(dbData);
-
-  console.log('✅ Nuevo ingreso registrado en backend y guardado en db.json:', nuevoIngreso);
-
-  return res.status(201).json({
-    success: true,
-    message: 'Ingreso registrado correctamente.',
-    data: nuevoIngreso
-  });
 });
 
-/**
- * REST API: Obtener todos los gastos registrados
- * GET /api/gastos
- */
-app.get('/api/gastos', (req, res) => {
-  const dbData = readDb();
-  res.json({
-    success: true,
-    data: dbData.gastos
-  });
+// Eliminar ingreso
+app.delete('/api/ingresos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const ingreso = await ingresosCollection.findOne({
+      id
+    });
+
+    if (!ingreso) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró el ingreso.'
+      });
+    }
+
+    await ingresosCollection.deleteOne({
+      id
+    });
+
+    console.log(
+      '🗑️ Ingreso eliminado de MongoDB:',
+      ingreso
+    );
+
+    res.json({
+      success: true,
+      message: 'Ingreso eliminado correctamente.',
+      data: ingreso
+    });
+
+  } catch (error) {
+    console.error('❌ Error eliminando ingreso:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar el ingreso.'
+    });
+  }
 });
 
-/**
- * REST API: Registrar un nuevo gasto
- * POST /api/gastos
- */
-app.post('/api/gastos', (req, res) => {
-  const { concept, description, amount, date, category } = req.body;
+// ================================
+// GASTOS
+// ================================
 
-  // 1. Validar que el concepto del gasto no esté vacío
-  const finalConcept = (concept || description || '').toString().trim();
-  if (!finalConcept) {
-    return res.status(400).json({
+// Obtener gastos
+app.get('/api/gastos', async (req, res) => {
+  try {
+    const gastos = await gastosCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({
+      success: true,
+      data: gastos
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo gastos:', error);
+
+    res.status(500).json({
       success: false,
-      message: 'El concepto del gasto es obligatorio y no debe estar vacío.'
+      message: 'Error al obtener los gastos'
     });
   }
-
-  // 2. Validar que el valor sea un número mayor que 0
-  const numericAmount = Number(amount);
-  if (isNaN(numericAmount) || numericAmount <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'El valor del gasto debe ser un número mayor que 0.'
-    });
-  }
-
-  // 3. Validar que la fecha sea válida
-  if (!date || isNaN(Date.parse(date))) {
-    return res.status(400).json({
-      success: false,
-      message: 'La fecha proporcionada no es válida.'
-    });
-  }
-
-  // 4. Validar que la categoría de gasto sea válida
-  if (!category || !CATEGORIAS_GASTOS_VALIDAS.includes(category)) {
-    return res.status(400).json({
-      success: false,
-      message: `La categoría seleccionada no es válida. Las opciones son: ${CATEGORIAS_GASTOS_VALIDAS.join(', ')}.`
-    });
-  }
-
-  // Descripción opcional
-  const optionalDescription = description && typeof description === 'string' ? description.trim() : '';
-
-  // Crear nuevo registro de gasto
-  const nuevoGasto = {
-    id: Date.now().toString(),
-    concept: finalConcept,
-    description: optionalDescription,
-    amount: numericAmount,
-    date,
-    category,
-    createdAt: new Date().toISOString()
-  };
-
-  // Leer estado actual de db.json, agregar nuevo gasto y guardar
-  const dbData = readDb();
-  dbData.gastos.push(nuevoGasto);
-  saveDb(dbData);
-
-  console.log('💸 Nuevo gasto registrado en backend y guardado en db.json:', nuevoGasto);
-
-  return res.status(201).json({
-    success: true,
-    message: 'Gasto registrado correctamente.',
-    data: nuevoGasto
-  });
 });
 
-/**
- * REST API: Eliminar un ingreso por ID
- * DELETE /api/ingresos/:id
- */
-app.delete('/api/ingresos/:id', (req, res) => {
-  const { id } = req.params;
-  const dbData = readDb();
+// Registrar gasto
+app.post('/api/gastos', async (req, res) => {
+  try {
+    const {
+      concept,
+      description,
+      amount,
+      date,
+      category
+    } = req.body;
 
-  const index = dbData.ingresos.findIndex(item => item.id === id);
-  if (index === -1) {
-    return res.status(404).json({
+    const finalConcept = (concept || description || '')
+      .toString()
+      .trim();
+
+    // Validar concepto
+    if (!finalConcept) {
+      return res.status(400).json({
+        success: false,
+        message: 'El concepto del gasto es obligatorio.'
+      });
+    }
+
+    // Validar monto
+    const numericAmount = Number(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El valor del gasto debe ser mayor que 0.'
+      });
+    }
+
+    // Validar fecha
+    if (!date || isNaN(Date.parse(date))) {
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha proporcionada no es válida.'
+      });
+    }
+
+    // Validar categoría
+    if (
+      !category ||
+      !CATEGORIAS_GASTOS_VALIDAS.includes(category)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'La categoría del gasto no es válida.'
+      });
+    }
+
+    const nuevoGasto = {
+      id: Date.now().toString(),
+      concept: finalConcept,
+      description:
+        typeof description === 'string'
+          ? description.trim()
+          : '',
+      amount: numericAmount,
+      date,
+      category,
+      createdAt: new Date()
+    };
+
+    await gastosCollection.insertOne(nuevoGasto);
+
+    console.log(
+      '💸 Nuevo gasto guardado en MongoDB:',
+      nuevoGasto
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Gasto registrado correctamente.',
+      data: nuevoGasto
+    });
+
+  } catch (error) {
+    console.error('❌ Error guardando gasto:', error);
+
+    res.status(500).json({
       success: false,
-      message: 'No se encontró el ingreso con el ID proporcionado.'
+      message: 'Error al guardar el gasto en MongoDB.'
     });
   }
-
-  const [deletedIncome] = dbData.ingresos.splice(index, 1);
-  saveDb(dbData);
-
-  console.log('🗑️ Ingreso eliminado del backend:', deletedIncome);
-
-  return res.json({
-    success: true,
-    message: 'Ingreso eliminado correctamente.',
-    data: deletedIncome
-  });
 });
 
-/**
- * REST API: Eliminar un gasto por ID
- * DELETE /api/gastos/:id
- */
-app.delete('/api/gastos/:id', (req, res) => {
-  const { id } = req.params;
-  const dbData = readDb();
+// Eliminar gasto
+app.delete('/api/gastos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  const index = dbData.gastos.findIndex(item => item.id === id);
-  if (index === -1) {
-    return res.status(404).json({
+    const gasto = await gastosCollection.findOne({
+      id
+    });
+
+    if (!gasto) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró el gasto.'
+      });
+    }
+
+    await gastosCollection.deleteOne({
+      id
+    });
+
+    console.log(
+      '🗑️ Gasto eliminado de MongoDB:',
+      gasto
+    );
+
+    res.json({
+      success: true,
+      message: 'Gasto eliminado correctamente.',
+      data: gasto
+    });
+
+  } catch (error) {
+    console.error('❌ Error eliminando gasto:', error);
+
+    res.status(500).json({
       success: false,
-      message: 'No se encontró el gasto con el ID proporcionado.'
+      message: 'Error al eliminar el gasto.'
     });
   }
-
-  const [deletedExpense] = dbData.gastos.splice(index, 1);
-  saveDb(dbData);
-
-  console.log('🗑️ Gasto eliminado del backend:', deletedExpense);
-
-  return res.json({
-    success: true,
-    message: 'Gasto eliminado correctamente.',
-    data: deletedExpense
-  });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-});
+// ================================
+// CONECTAR MONGODB Y ARRANCAR
+// ================================
+
+async function startServer() {
+  try {
+    console.log('🔄 Conectando a MongoDB Atlas...');
+
+    await client.connect();
+
+    db = client.db('financontrol');
+
+    ingresosCollection = db.collection('ingresos');
+    gastosCollection = db.collection('gastos');
+
+    await db.command({ ping: 1 });
+
+    console.log('✅ MongoDB Atlas conectado correctamente');
+    console.log('📊 Base de datos: financontrol');
+
+    app.listen(PORT, () => {
+      console.log(
+        `🚀 Servidor ejecutándose en http://localhost:${PORT}`
+      );
+    });
+
+  } catch (error) {
+    console.error('❌ Error conectando a MongoDB Atlas:');
+    console.error(error);
+
+    process.exit(1);
+  }
+}
+
+startServer();
